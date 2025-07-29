@@ -1,0 +1,70 @@
+/*--
+ Call Center Analytics with Snowflake Cortex - Setup Script
+ This script creates all necessary objects for the call center analytics solution
+--*/
+
+USE ROLE accountadmin;
+
+-- Create custom role for call center analytics
+CREATE OR REPLACE ROLE call_center_analytics_role
+    COMMENT = 'Role for call center analytics with AI_TRANSCRIBE and Cortex Agents';
+
+-- Create warehouse for call center analytics
+CREATE OR REPLACE WAREHOUSE call_center_analytics_wh
+    WAREHOUSE_SIZE = 'medium'
+    WAREHOUSE_TYPE = 'standard'
+    AUTO_SUSPEND = 60
+    AUTO_RESUME = TRUE
+    INITIALLY_SUSPENDED = TRUE
+    COMMENT = 'Warehouse for call center analytics with Cortex LLM';
+
+-- Grant warehouse usage to custom role
+GRANT USAGE ON WAREHOUSE call_center_analytics_wh TO ROLE call_center_analytics_role;
+GRANT OPERATE ON WAREHOUSE call_center_analytics_wh TO ROLE call_center_analytics_role;
+
+USE WAREHOUSE call_center_analytics_wh;
+
+-- Create database and schemas
+CREATE DATABASE IF NOT EXISTS call_center_analytics_db;
+CREATE OR REPLACE SCHEMA call_center_analytics_db.analytics;
+
+-- Grant database and schema access to custom role
+GRANT USAGE ON DATABASE call_center_analytics_db TO ROLE call_center_analytics_role;
+GRANT USAGE ON SCHEMA call_center_analytics_db.public TO ROLE call_center_analytics_role;
+GRANT USAGE ON SCHEMA call_center_analytics_db.analytics TO ROLE call_center_analytics_role;
+
+-- Grant create privileges on schemas
+GRANT CREATE TABLE ON SCHEMA call_center_analytics_db.public TO ROLE call_center_analytics_role;
+GRANT CREATE VIEW ON SCHEMA call_center_analytics_db.public TO ROLE call_center_analytics_role;
+GRANT CREATE STAGE ON SCHEMA call_center_analytics_db.public TO ROLE call_center_analytics_role;
+GRANT CREATE FILE FORMAT ON SCHEMA call_center_analytics_db.public TO ROLE call_center_analytics_role;
+GRANT CREATE FUNCTION ON SCHEMA call_center_analytics_db.public TO ROLE call_center_analytics_role;
+GRANT CREATE TABLE ON SCHEMA call_center_analytics_db.analytics TO ROLE call_center_analytics_role;
+GRANT CREATE VIEW ON SCHEMA call_center_analytics_db.analytics TO ROLE call_center_analytics_role;
+
+-- Grant CORTEX_USER role for Cortex functions access
+GRANT DATABASE ROLE SNOWFLAKE.CORTEX_USER TO ROLE call_center_analytics_role;
+
+-- Grant the role to the current user
+BEGIN
+    LET current_user_name := CURRENT_USER();
+    EXECUTE IMMEDIATE 'GRANT ROLE call_center_analytics_role TO USER ' || current_user_name;
+END;
+
+-- Create stages for data and audio files
+CREATE OR REPLACE STAGE call_center_analytics_db.public.audio_files
+    COMMENT = 'Stage for call center audio files';
+
+-- Grant stage access to custom role
+GRANT READ ON STAGE call_center_analytics_db.public.audio_files TO ROLE call_center_analytics_role;
+GRANT WRITE ON STAGE call_center_analytics_db.public.audio_files TO ROLE call_center_analytics_role;
+
+-- Display next steps
+SELECT '1.' AS step, 
+       'Upload mp3 files to audio_files stage' AS instruction
+UNION ALL
+SELECT '2.', 'Upload and run call_center_analytics.ipynb notebook'
+UNION ALL
+SELECT '3.', 'Upload and run cortex_analyst_setup.ipynb notebook'
+UNION ALL  
+SELECT '4.', 'Deploy Streamlit application with Modern_Call_Center_App.py'; 
