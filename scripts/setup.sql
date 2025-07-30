@@ -24,6 +24,9 @@ GRANT OPERATE ON WAREHOUSE call_center_analytics_wh TO ROLE call_center_analytic
 
 USE WAREHOUSE call_center_analytics_wh;
 
+-- assign Query Tag to Session. This helps with performance monitoring and troubleshooting
+ALTER SESSION SET query_tag = '{"origin":"sf_sit-is","name":"call_center_analytics_2","version":{"major":1, "minor":0},"attributes":{"is_quickstart":1, "source":"sql"}}';
+
 -- Create database and schemas
 CREATE DATABASE IF NOT EXISTS call_center_analytics_db;
 CREATE OR REPLACE SCHEMA call_center_analytics_db.analytics;
@@ -52,12 +55,12 @@ BEGIN
 END;
 
 -- Create stages for data and audio files
-CREATE OR REPLACE STAGE call_center_analytics_db.public.audio_files
+CREATE OR REPLACE STAGE call_center_analytics_db.analytics.audio_files
     COMMENT = 'Stage for call center audio files';
 
 -- Grant stage access to custom role
-GRANT READ ON STAGE call_center_analytics_db.public.audio_files TO ROLE call_center_analytics_role;
-GRANT WRITE ON STAGE call_center_analytics_db.public.audio_files TO ROLE call_center_analytics_role;
+GRANT READ ON STAGE call_center_analytics_db.analytics.audio_files TO ROLE call_center_analytics_role;
+GRANT WRITE ON STAGE call_center_analytics_db.analytics.audio_files TO ROLE call_center_analytics_role;
 
 -- Display next steps
 SELECT '1.' AS step, 
