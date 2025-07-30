@@ -42,8 +42,14 @@ GRANT CREATE VIEW ON SCHEMA call_center_analytics_db.public TO ROLE call_center_
 GRANT CREATE STAGE ON SCHEMA call_center_analytics_db.public TO ROLE call_center_analytics_role;
 GRANT CREATE FILE FORMAT ON SCHEMA call_center_analytics_db.public TO ROLE call_center_analytics_role;
 GRANT CREATE FUNCTION ON SCHEMA call_center_analytics_db.public TO ROLE call_center_analytics_role;
+GRANT CREATE CORTEX SEARCH SERVICE ON SCHEMA call_center_analytics_db.public TO ROLE call_center_analytics_role;
 GRANT CREATE TABLE ON SCHEMA call_center_analytics_db.analytics TO ROLE call_center_analytics_role;
 GRANT CREATE VIEW ON SCHEMA call_center_analytics_db.analytics TO ROLE call_center_analytics_role;
+GRANT CREATE STAGE ON SCHEMA call_center_analytics_db.analytics TO ROLE call_center_analytics_role;
+GRANT CREATE FILE FORMAT ON SCHEMA call_center_analytics_db.analytics TO ROLE call_center_analytics_role;
+GRANT CREATE FUNCTION ON SCHEMA call_center_analytics_db.analytics TO ROLE call_center_analytics_role;
+GRANT CREATE CORTEX SEARCH SERVICE ON SCHEMA call_center_analytics_db.analytics TO ROLE call_center_analytics_role;
+GRANT CREATE STREAMLIT ON SCHEMA call_center_analytics_db.analytics TO ROLE call_center_analytics_role;
 
 -- Grant CORTEX_USER role for Cortex functions access
 GRANT DATABASE ROLE SNOWFLAKE.CORTEX_USER TO ROLE call_center_analytics_role;
@@ -54,13 +60,34 @@ BEGIN
     EXECUTE IMMEDIATE 'GRANT ROLE call_center_analytics_role TO USER ' || current_user_name;
 END;
 
+GRANT ROLE call_center_analytics_role TO ROLE sysadmin;
+
 -- Create stages for data and audio files
 CREATE OR REPLACE STAGE call_center_analytics_db.analytics.audio_files
+    DIRECTORY = (ENABLE = TRUE)
+    ENCRYPTION = (TYPE = 'SNOWFLAKE_SSE')
     COMMENT = 'Stage for call center audio files';
 
 -- Grant stage access to custom role
 GRANT READ ON STAGE call_center_analytics_db.analytics.audio_files TO ROLE call_center_analytics_role;
 GRANT WRITE ON STAGE call_center_analytics_db.analytics.audio_files TO ROLE call_center_analytics_role;
+
+GRANT READ ON STAGE call_center_analytics_db.analytics.audio_files TO ROLE call_center_analytics_role;
+GRANT WRITE ON STAGE call_center_analytics_db.analytics.audio_files TO ROLE call_center_analytics_role;
+
+-- Grant SELECT privileges on all tables for Cortex Analyst semantic models
+GRANT SELECT ON ALL TABLES IN SCHEMA call_center_analytics_db.public TO ROLE call_center_analytics_role;
+GRANT SELECT ON ALL TABLES IN SCHEMA call_center_analytics_db.analytics TO ROLE call_center_analytics_role;
+GRANT SELECT ON FUTURE TABLES IN SCHEMA call_center_analytics_db.public TO ROLE call_center_analytics_role;
+GRANT SELECT ON FUTURE TABLES IN SCHEMA call_center_analytics_db.analytics TO ROLE call_center_analytics_role;
+
+-- Grant SELECT privileges on all views for Cortex Analyst semantic models
+GRANT SELECT ON ALL VIEWS IN SCHEMA call_center_analytics_db.public TO ROLE call_center_analytics_role;
+GRANT SELECT ON ALL VIEWS IN SCHEMA call_center_analytics_db.analytics TO ROLE call_center_analytics_role;
+GRANT SELECT ON FUTURE VIEWS IN SCHEMA call_center_analytics_db.public TO ROLE call_center_analytics_role;
+GRANT SELECT ON FUTURE VIEWS IN SCHEMA call_center_analytics_db.analytics TO ROLE call_center_analytics_role;
+
+
 
 -- Display next steps
 SELECT '1.' AS step, 

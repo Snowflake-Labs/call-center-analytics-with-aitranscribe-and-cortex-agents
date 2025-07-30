@@ -677,7 +677,7 @@ def show_ai_assistant():
         - "Which call intents have the lowest satisfaction scores?"
         - "Give me the breakdown of calls by topic"
         
-        **🚀 Complex multi-tool questions:**
+        **🚀 Complex questions:**
         - "Find billing complaint calls and show resolution rates for those agents"
         - "What are customers saying about our product and how does that correlate with satisfaction?"
         """)
