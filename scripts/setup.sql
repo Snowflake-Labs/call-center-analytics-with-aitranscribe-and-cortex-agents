@@ -54,12 +54,7 @@ GRANT CREATE STREAMLIT ON SCHEMA call_center_analytics_db.analytics TO ROLE call
 -- Grant CORTEX_USER role for Cortex functions access
 GRANT DATABASE ROLE SNOWFLAKE.CORTEX_USER TO ROLE call_center_analytics_role;
 
--- Grant the role to the current user
-BEGIN
-    LET current_user_name := CURRENT_USER();
-    EXECUTE IMMEDIATE 'GRANT ROLE call_center_analytics_role TO USER ' || current_user_name;
-END;
-
+-- role hierarchy
 GRANT ROLE call_center_analytics_role TO ROLE sysadmin;
 
 -- Create stages for data and audio files
