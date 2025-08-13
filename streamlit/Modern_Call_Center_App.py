@@ -25,7 +25,7 @@ API_TIMEOUT = 50000  # in milliseconds
 
 # Get current database and schema dynamically
 current_db = session.get_current_database()
-current_schema = session.get_current_schema()
+current_schema = "analytics"
 
 CORTEX_SEARCH_SERVICE = f"{current_db}.{current_schema}.call_center_search"
 SEMANTIC_MODEL = f"@{current_db}.{current_schema}.cortex_models/semantic_models/call_center_semantic_model.yaml"
@@ -98,7 +98,7 @@ def load_kpis():
     """Load overall KPIs from the view created in setup"""
     try:
         # First try the existing view
-        df = session.sql("SELECT * FROM call_center_kpis").to_pandas()
+        df = session.sql("SELECT * FROM call_center_analytics_db.analytics.call_center_kpis").to_pandas()
         if len(df) > 0:
             return df.iloc[0]
         else:
@@ -120,7 +120,7 @@ def load_kpis():
                 ROUND(SUM(CASE WHEN sentiment_score > 0.1 THEN 1 ELSE 0 END) / COUNT(*) * 100, 1) as POSITIVE_SENTIMENT_PCT,
                 MODE(primary_intent) as TOP_CALL_INTENT,
                 ROUND(AVG(word_count), 0) as AVG_CALL_LENGTH_WORDS
-            FROM comprehensive_call_analysis
+            FROM call_center_analytics_db.analytics.comprehensive_call_analysis
             WHERE agent_name IS NOT NULL 
             AND agent_name != 'Not Available'
             """
@@ -152,7 +152,7 @@ def create_default_kpis():
 def load_agent_performance():
     """Load agent performance data"""
     try:
-        return session.sql("SELECT * FROM agent_performance_summary").to_pandas()
+        return session.sql("SELECT * FROM call_center_analytics_db.analytics.agent_performance_summary").to_pandas()
     except Exception as e:
         # If view doesn't exist, try to calculate agent performance directly
         # Loading agent performance data...
@@ -176,7 +176,7 @@ def load_agent_performance():
                 SUM(CASE WHEN escalation_required = 'yes' THEN 1 ELSE 0 END) as ESCALATIONS,
                 ROUND(SUM(CASE WHEN escalation_required = 'yes' THEN 1 ELSE 0 END) / COUNT(*) * 100, 1) as ESCALATION_RATE
                 
-            FROM comprehensive_call_analysis
+            FROM call_center_analytics_db.analytics.comprehensive_call_analysis
             WHERE agent_name != 'Not Available' AND agent_name IS NOT NULL
             GROUP BY agent_name
             ORDER BY AVG_PERFORMANCE_SCORE DESC
@@ -197,7 +197,7 @@ def load_call_patterns():
             ROUND(AVG(sentiment_score), 3) as AVG_SENTIMENT,
             ROUND(SUM(CASE WHEN issue_resolved = 'yes' THEN 1 ELSE 0 END) / COUNT(*) * 100, 1) as RESOLUTION_RATE,
             ROUND(SUM(CASE WHEN customer_satisfaction = 'satisfied' THEN 1 ELSE 0 END) / COUNT(*) * 100, 1) as SATISFACTION_RATE
-        FROM comprehensive_call_analysis
+        FROM call_center_analytics_db.analytics.comprehensive_call_analysis
         WHERE primary_intent IS NOT NULL AND primary_intent != 'Not Available'
         GROUP BY primary_intent
         ORDER BY CALL_COUNT DESC
@@ -216,7 +216,7 @@ def load_sentiment_trends():
             sentiment_category as SENTIMENT_CATEGORY,
             COUNT(*) as COUNT,
             ROUND(AVG(agent_performance_score), 1) as AVG_PERFORMANCE
-        FROM comprehensive_call_analysis
+        FROM call_center_analytics_db.analytics.comprehensive_call_analysis
         WHERE sentiment_category IS NOT NULL
         GROUP BY sentiment_category
         """
@@ -737,7 +737,7 @@ def show_ai_assistant():
                                     query_text = f"""
                                     SELECT call_id, agent_name, customer_name, primary_intent, 
                                            LEFT(transcript_text, 400) || '...' as preview
-                                    FROM comprehensive_call_analysis 
+                                    FROM call_center_analytics_db.analytics.comprehensive_call_analysis 
                                     WHERE call_id = '{doc_id}'
                                     """
                                     
@@ -767,7 +767,7 @@ def show_ai_assistant():
                                     query_text = f"""
                                     SELECT call_id, agent_name, customer_name, primary_intent, 
                                            LEFT(transcript_text, 400) || '...' as preview
-                                    FROM comprehensive_call_analysis 
+                                    FROM call_center_analytics_db.analytics.comprehensive_call_analysis 
                                     WHERE call_id LIKE '%{doc_id.replace('.mp3', '').replace('.wav', '')}%'
                                     LIMIT 1
                                     """
@@ -801,7 +801,7 @@ def show_ai_assistant():
                                            'N/A' as customer_name, 
                                            'Sample Audio' as primary_intent,
                                            LEFT(transcript_text, 400) || '...' as preview
-                                    FROM ai_transcribed_calls 
+                                    FROM call_center_analytics_db.analytics.ai_transcribed_calls 
                                     WHERE call_id = '{doc_id}'
                                     AND transcript_text IS NOT NULL
                                     """
@@ -835,7 +835,7 @@ def show_ai_assistant():
                                            'N/A' as customer_name, 
                                            'Sample Audio' as primary_intent,
                                            LEFT(transcript_text, 400) || '...' as preview
-                                    FROM ai_transcribed_calls 
+                                    FROM call_center_analytics_db.analytics.ai_transcribed_calls 
                                     WHERE call_id LIKE '%{doc_id.replace('.mp3', '').replace('.wav', '')}%'
                                     AND transcript_text IS NOT NULL
                                     LIMIT 1
@@ -943,7 +943,7 @@ def show_deep_analytics():
                 ROUND(AVG(sentiment_score), 3) as AVG_SENTIMENT,
                 ROUND(SUM(CASE WHEN issue_resolved = 'yes' THEN 1 ELSE 0 END) / COUNT(*) * 100, 1) as RESOLUTION_RATE,
                 ROUND(SUM(CASE WHEN escalation_required = 'yes' THEN 1 ELSE 0 END) / COUNT(*) * 100, 1) as ESCALATION_RATE
-            FROM comprehensive_call_analysis
+            FROM call_center_analytics_db.analytics.comprehensive_call_analysis
             WHERE primary_intent IS NOT NULL AND primary_intent != 'Not Available'
             AND urgency_level IS NOT NULL AND urgency_level != 'Not Available'
             GROUP BY primary_intent, urgency_level
@@ -1005,7 +1005,7 @@ def show_deep_analytics():
                 PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY sentiment_score) OVER () as sentiment_q3,
                 AVG(sentiment_score) OVER () as avg_sentiment,
                 STDDEV(sentiment_score) OVER () as stddev_sentiment
-            FROM comprehensive_call_analysis
+            FROM call_center_analytics_db.analytics.comprehensive_call_analysis
             WHERE sentiment_score IS NOT NULL
         )
         SELECT 
@@ -1061,7 +1061,7 @@ def show_deep_analytics():
                 ROUND(SUM(CASE WHEN issue_resolved = 'yes' THEN 1 ELSE 0 END) / COUNT(*) * 100, 1) as resolution_rate,
                 ROUND(SUM(CASE WHEN customer_satisfaction = 'satisfied' THEN 1 ELSE 0 END) / COUNT(*) * 100, 1) as satisfaction_rate,
                 MODE(primary_intent) as TOP_INTENT
-            FROM comprehensive_call_analysis
+            FROM call_center_analytics_db.analytics.comprehensive_call_analysis
             WHERE agent_name != 'Not Available'
         )
         SELECT 
@@ -1098,7 +1098,7 @@ def show_audio_explorer():
         ROUND(sentiment_score, 3) as SENTIMENT_SCORE,
         ROUND(agent_performance_score, 1) as AGENT_PERFORMANCE_SCORE,
         LEFT(transcript_text, 200) || '...' as PREVIEW
-    FROM comprehensive_call_analysis
+    FROM call_center_analytics_db.analytics.comprehensive_call_analysis
     WHERE transcript_text IS NOT NULL
     ORDER BY analysis_timestamp DESC
     LIMIT 20
@@ -1172,7 +1172,7 @@ def show_audio_explorer():
                 # Get full transcript
                 full_transcript_query = f"""
                 SELECT transcript_text, call_summary, improvement_opportunities
-                FROM comprehensive_call_analysis
+                FROM call_center_analytics_db.analytics.comprehensive_call_analysis
                 WHERE call_id = '{selected_call}'
                 """
                 
